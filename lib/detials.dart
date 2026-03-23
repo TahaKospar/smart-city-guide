@@ -1,29 +1,71 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Reviews/review.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Detials extends StatefulWidget {
   final data;
-  const Detials({super.key, this.data});
+  const Detials({
+    super.key,
+    this.data,
+  });
 
   @override
   State<Detials> createState() => _DetialsState();
 }
 
 class _DetialsState extends State<Detials> {
-  String? distanceText;
-  bool locationService = false;
-  LocationPermission? locationPermission;
+  String? distaceText;
+  getPermission() async {
+    bool serviceEnable;
+    LocationPermission permission;
 
-  Future<void> _openMap() async {
-    final String mapLink = widget.data['map'];
-    final Uri url = Uri.parse(mapLink);
 
-    try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      print("Error opening map: $e");
+    serviceEnable = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnable) {
+      AwesomeDialog(
+              context: context,
+              animType: AnimType.bottomSlide,
+              dialogType: DialogType.error,
+              btnOkOnPress: () {},
+              title: "GPS is Off",
+              desc: "Please Open Location In Your Device")
+          .show();
+      return;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        AwesomeDialog(
+                context: context,
+                animType: AnimType.bottomSlide,
+                dialogType: DialogType.error,
+                btnOkOnPress: () {},
+                title: "Please Check Permission")
+            .show();
+      }
+    }
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      Position position = await Geolocator.getCurrentPosition();
+      double distanceMetter = Geolocator.distanceBetween(widget.data["lat"],
+          widget.data["lng"], position.latitude, position.longitude);
+      double distanceInKM = distanceMetter / 1000;
+      setState(() {
+        distaceText = "${distanceInKM.toStringAsFixed(2)}KM ";
+      });
+    }
+  }
+
+  Future<void> openMap() async {
+    final Uri googleUrl = Uri.parse(widget.data["map"]);
+
+    if (!await launchUrl(googleUrl, mode: LaunchMode.externalApplication)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Could not open the map.")),
+      );
     }
   }
 
@@ -31,145 +73,133 @@ class _DetialsState extends State<Detials> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Detials"),
+        title: Text("Smart City Guide"),
+        centerTitle: true,
+        backgroundColor: Colors.cyan,
       ),
-      body: ListView(
-        children: [
-          Image.asset(
-            widget.data["imageLink"],
-          ),
-          Container(
-            margin: EdgeInsets.symmetric(vertical: 15),
-            child: Text(
-              textAlign: TextAlign.center,
-              widget.data["imageTitle"],
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: "Delius",
-                  fontSize: 40),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: _openMap,
-                icon: Icon(
-                  Icons.location_pin,
+      body: Container(
+        margin: EdgeInsets.all(15),
+        child: ListView(
+          children: [
+            Column(
+              children: [
+                Image.asset(
+                  widget.data["imageLink"],
                 ),
-                iconSize: 40,
-                color: Colors.red,
-              ),
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 15),
-                child: Text(
+                SizedBox(
+                  height: 15,
+                ),
+                Text(
+                  widget.data["imageTitle"],
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        openMap();
+                      },
+                      icon: Icon(Icons.location_on_outlined),
+                      color: Colors.red,
+                      iconSize: 40,
+                    ),
+                    Text(
+                      widget.data["location"],
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                Text(
+                  widget.data["description"],
                   textAlign: TextAlign.center,
-                  widget.data["location"],
                   style: TextStyle(
-                      fontWeight: FontWeight.bold, fontFamily: "Delius"),
-                ),
-              ),
-            ],
-          ),
-          Container(
-            padding: EdgeInsets.all(15),
-            margin: EdgeInsets.symmetric(vertical: 15),
-            child: Text(
-              textAlign: TextAlign.center,
-              widget.data["description"],
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: "Delius",
-                  fontSize: 30),
-            ),
-          ),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 60),
-            child: MaterialButton(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(60)),
-              color: Colors.black,
-              textColor: Colors.white,
-              onPressed: () async {
-                double? distanceInMetter;
-                locationService = await Geolocator.isLocationServiceEnabled();
-                if (!locationService) {
-                  AwesomeDialog(
-                    context: context,
-                    animType: AnimType.scale,
-                    dialogType: DialogType.error,
-                    btnCancelIcon: Icons.close,
-                    title: "Location not Enabeld",
-                    desc: "please turn on of the location",
-                    btnCancelOnPress: () {},
-                  ).show();
-                  return;
-                }
-                locationPermission = await Geolocator.checkPermission();
-                if (locationPermission == LocationPermission.denied) {
-                  locationPermission = await Geolocator.requestPermission();
-                  if (locationPermission == LocationPermission.denied) {
-                    AwesomeDialog(
-                      context: context,
-                      animType: AnimType.scale,
-                      dialogType: DialogType.error,
-                      btnCancelIcon: Icons.close,
-                      title: "Permission denied",
-                      desc: "please give the permission",
-                      btnCancelOnPress: () {},
-                    ).show();
-                    return;
-                  }
-                  if (locationPermission == LocationPermission.deniedForever) {
-                    AwesomeDialog(
-                      context: context,
-                      animType: AnimType.scale,
-                      dialogType: DialogType.error,
-                      btnCancelIcon: Icons.close,
-                      title: "Permission denied Forever",
-                      desc: "please give the permission",
-                      btnCancelOnPress: () {},
-                    ).show();
-                    return;
-                  }
-                }
-                Position position = await Geolocator.getCurrentPosition();
-                distanceInMetter = Geolocator.distanceBetween(
-                    widget.data["lat"],
-                    widget.data["long"],
-                    position.latitude,
-                    position.longitude);
-                setState(() {
-                  distanceText = (distanceInMetter! / 1000).toStringAsFixed(1);
-                });
-              },
-              child: Text("Distnation Between"),
-            ),
-          ),
-          distanceText == null
-              ? SizedBox()
-              : Container(
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(60),
+                    fontSize: 20,
                   ),
-                  margin: EdgeInsets.all(20),
-                  padding: EdgeInsets.all(20),
-                  alignment: Alignment.center,
-                  child: Text("Distance is : $distanceText km"),
                 ),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 60),
-            child: MaterialButton(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(60)),
-              color: Colors.blueAccent,
-              textColor: Colors.white,
-              onPressed: _openMap,
-              child: Text("Boot it now"),
-            ),
-          )
-        ],
+                SizedBox(
+                  height: 30,
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey),
+                  onPressed: () {
+                    openMap();
+                  },
+                  child: Text(
+                    "Boot It Now",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey),
+                  onPressed: () {
+                    getPermission();
+                  },
+                  child: Text(
+                    "Calc Defrence ",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(
+                  height: 30,
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey),
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => Review(noteId: widget.data["id"]),
+                    ));
+                  },
+                  child: Text(
+                    "View Reviews",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                if (distaceText != null)
+                  Container(
+                    width: 300,
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(60)),
+                    child: Text(
+                      "$distaceText",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

@@ -1,3 +1,16 @@
+// الجزء ده هو اللي كان ناقصك (بداية الإضافة)
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // ده السطر اللي بيشغل خدمات جوجل عشان الفايربيس يشتغل
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+// (نهاية الإضافة)
+
 allprojects {
     repositories {
         google()

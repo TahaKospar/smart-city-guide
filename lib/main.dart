@@ -1,24 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/homePage.dart';
-import 'package:flutter_application_1/page1.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/login.dart';
+import 'package:flutter_application_1/register.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences shard = await SharedPreferences.getInstance();
-  Widget startScrean;
-  String? savedName = shard.getString("name");
-  if (savedName != null && savedName.isNotEmpty) {
-    startScrean = const Page1();
-  } else {
-    startScrean = const Homepage();
-  }
-  runApp(MyApp(startScrean: startScrean));
+  await Firebase.initializeApp();
+  runApp(MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  final Widget startScrean;
-  const MyApp({super.key, required this.startScrean});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -26,12 +20,30 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user == null) {
+        print("No User");
+      } else {
+        print("User Found");
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-          appBarTheme:
-              AppBarTheme(backgroundColor: Colors.cyan, centerTitle: true)),
-      home: widget.startScrean,
+      debugShowCheckedModeBanner: false,
+      home: (FirebaseAuth.instance.currentUser != null &&
+              FirebaseAuth.instance.currentUser!.emailVerified
+          ? Homepage()
+          : Login()),
+      routes: {
+        "homepage": (context) => Homepage(),
+        "login": (context) => Login(),
+        "register": (context) => Register(),
+      },
     );
   }
 }

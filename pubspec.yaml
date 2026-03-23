@@ -42,9 +42,19 @@ dependencies:
   shared_preferences: ^2.5.3
   geolocator: ^14.0.2
   url_launcher: ^6.3.2
-  # geocoding: ^4.0.0
-  # google_maps_flutter: ^2.14.0
-  # google_sign_in: ^7.2.0
+  google_sign_in: ^6.2.1
+  firebase_auth: ^6.1.4
+  firebase_core: ^4.4.0
+  cloud_firestore: ^6.1.2
+  firebase_storage: ^13.0.6
+  firebase_messaging: ^16.1.1
+  font_awesome_flutter: ^10.9.1
+  octo_image: ^2.0.0
+
+
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
