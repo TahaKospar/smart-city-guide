@@ -15,6 +15,10 @@ The app focuses on clean UI, responsiveness, and real-time data from Firebase.
 |:---:|:---:|:---:|:---:|
 | <img src="screenshots/image12.jpeg" width="180"/> | <img src="screenshots/image13.jpeg" width="180"/> | <img src="screenshots/image14.jpeg" width="180"/> | <img src="screenshots/image15.jpeg" width="180"/> |
 
+| Comments | Map | Profile |
+|:---:|:---:|:---:|
+| <img src="screenshots/image16.jpeg" width="180"/> | <img src="screenshots/image17.jpeg" width="180"/> | <img src="screenshots/image18.jpeg" width="180"/> |
+
 > *The app adapts smoothly to different screen sizes (Mobile / Tablet).*
 
 ---
