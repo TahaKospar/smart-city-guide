@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/FavPage.dart';
 import 'package:flutter_application_1/Reviews/MyComments.dart';
 import 'package:flutter_application_1/detials.dart';
+import 'package:flutter_application_1/places/addPlace.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:octo_image/octo_image.dart';
 
@@ -16,20 +19,38 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage>
     with SingleTickerProviderStateMixin {
+  Future<void> getToken() async {
+    await Firebase.initializeApp();
+    String? myToken = await FirebaseMessaging.instance.getToken();
+    print("------------------------------------------------------");
+    print(myToken);
+    print("------------------------------------------------------");
+  }
+
   bool isLodaing = true;
   List<QueryDocumentSnapshot> touristData = [];
   List<QueryDocumentSnapshot> restaurantData = [];
-
+  List<QueryDocumentSnapshot> hotelData = [];
   getData() async {
-    //لما تجيب كل التعليقات، أو كل الأماكن في التصنيف.
-    QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection("place").get();
-    touristData = querySnapshot.docs
-        .where((element) => element['category'] == "tourist")
-        .toList();
-    restaurantData = querySnapshot.docs
-        .where((element) => element['category'] == "restaurant")
-        .toList();
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection("place")
+        .where("isApproved", isEqualTo: true)
+        .get();
+
+    touristData = querySnapshot.docs.where((element) {
+      final data = element.data() as Map<String, dynamic>;
+      return data.containsKey('category') && data['category'] == "tourist";
+    }).toList();
+
+    restaurantData = querySnapshot.docs.where((element) {
+      final data = element.data() as Map<String, dynamic>;
+      return data.containsKey('category') && data['category'] == "restaurant";
+    }).toList();
+
+    hotelData = querySnapshot.docs.where((element) {
+      final data = element.data() as Map<String, dynamic>;
+      return data.containsKey('category') && data['category'] == "hotel";
+    }).toList();
 
     isLodaing = false;
     setState(() {});
@@ -58,7 +79,8 @@ class _HomepageState extends State<Homepage>
   void initState() {
     super.initState();
     getData();
-    tabcontroller = TabController(length: 2, vsync: this);
+    tabcontroller = TabController(length: 3, vsync: this);
+    getToken();
   }
 
   @override
@@ -70,6 +92,16 @@ class _HomepageState extends State<Homepage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => addPlace(),
+            ),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
       drawer: Drawer(
         child: FutureBuilder(
           future: FirebaseFirestore.instance
@@ -176,15 +208,19 @@ class _HomepageState extends State<Homepage>
             onPressed: () {
               showSearch(
                   context: context,
-                  delegate: CustomSearch(
-                      listData: [...touristData, ...restaurantData]));
+                  delegate: CustomSearch(listData: [
+                    ...touristData,
+                    ...restaurantData,
+                    ...hotelData
+                  ]));
             },
             icon: const Icon(Icons.search),
           )
         ],
         bottom: TabBar(controller: tabcontroller, tabs: const [
           Tab(icon: Icon(Icons.location_city, size: 30), text: "Tourists"),
-          Tab(icon: Icon(Icons.restaurant, size: 30), text: "Restaurant"),
+          Tab(icon: Icon(Icons.restaurant, size: 30), text: "Restaurants"),
+          Tab(icon: Icon(Icons.hotel_sharp, size: 30), text: "Hotels"),
         ]),
       ),
       body: isLodaing
@@ -214,7 +250,8 @@ class _HomepageState extends State<Homepage>
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: OctoImage(
-                            image: AssetImage(touristData[index]["imageLink"]),
+                            image:
+                                NetworkImage(touristData[index]["imageLink"]),
                             placeholderBuilder:
                                 OctoPlaceholder.circularProgressIndicator(),
                             errorBuilder: OctoError.icon(color: Colors.red),
@@ -298,8 +335,8 @@ class _HomepageState extends State<Homepage>
                           borderRadius: BorderRadius.circular(20),
                           // تعديل الصورة هنا
                           child: OctoImage(
-                            image:
-                                AssetImage(restaurantData[index]["imageLink"]),
+                            image: NetworkImage(
+                                restaurantData[index]["imageLink"]),
                             placeholderBuilder:
                                 OctoPlaceholder.circularProgressIndicator(),
                             errorBuilder: OctoError.icon(color: Colors.red),
@@ -349,6 +386,90 @@ class _HomepageState extends State<Homepage>
                         const SizedBox(height: 8),
                         Text(
                           restaurantData[index]["description"],
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount:
+                        MediaQuery.of(context).size.width > 600 ? 4 : 2,
+                    childAspectRatio: (MediaQuery.of(context).size.width /
+                        (MediaQuery.of(context).size.height * 0.9)),
+                    crossAxisSpacing: 20,
+                    mainAxisSpacing: 20),
+                itemCount: hotelData.length,
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      Map<String, dynamic> placeData =
+                          hotelData[index].data() as Map<String, dynamic>;
+                      placeData["id"] = hotelData[index].id;
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => Detials(data: placeData),
+                      ));
+                    },
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          // تعديل الصورة هنا
+                          child: OctoImage(
+                            image: NetworkImage(hotelData[index]["imageLink"]),
+                            placeholderBuilder:
+                                OctoPlaceholder.circularProgressIndicator(),
+                            errorBuilder: OctoError.icon(color: Colors.red),
+                            fit: BoxFit.cover,
+                            height: 200,
+                            width: double.infinity,
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Text(
+                              hotelData[index]["imageTitle"],
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                addOrRemoveFav(hotelData[index].id);
+                              },
+                              icon: FutureBuilder<QuerySnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection("place")
+                                    .doc(hotelData[index].id)
+                                    .collection("favorite")
+                                    .where("userId",
+                                        isEqualTo: FirebaseAuth
+                                            .instance.currentUser?.uid)
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData &&
+                                      snapshot.data!.docs.isNotEmpty) {
+                                    return const Icon(Icons.favorite,
+                                        color: Colors.red);
+                                  }
+                                  return const Icon(Icons.favorite_border);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          hotelData[index]["location"],
+                          style: const TextStyle(fontWeight: FontWeight.w200),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          hotelData[index]["description"],
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -409,7 +530,7 @@ class CustomSearch extends SearchDelegate {
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: OctoImage(
-              image: AssetImage(getData[index]["imageLink"]),
+              image: NetworkImage(getData[index]["imageLink"]),
               placeholderBuilder: OctoPlaceholder.circularProgressIndicator(),
               errorBuilder: OctoError.icon(color: Colors.red),
               width: 50,
@@ -450,7 +571,7 @@ class CustomSearch extends SearchDelegate {
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: OctoImage(
-                image: AssetImage(sourceList[index]["imageLink"]),
+                image: NetworkImage(sourceList[index]["imageLink"]),
                 placeholderBuilder: OctoPlaceholder.circularProgressIndicator(),
                 errorBuilder: OctoError.icon(color: Colors.red),
                 width: 50,

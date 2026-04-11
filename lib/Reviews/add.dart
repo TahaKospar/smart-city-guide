@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/notification_helper.dart';
 
 class Add extends StatefulWidget {
   final String? docid;
@@ -46,7 +48,7 @@ class _AddState extends State<Add> {
       "placeImage": placeImage,
     };
 
-    // لما تعوز تمسح، تعدل، أو تضيف بيانات في مكان محدد. 
+    // لما تعوز تمسح، تعدل، أو تضيف بيانات في مكان محدد.
     DocumentReference placeCommentRef = FirebaseFirestore.instance
         .collection("place")
         .doc(widget.docid)
@@ -62,6 +64,14 @@ class _AddState extends State<Add> {
     await placeCommentRef.set(commentData);
     await userCommentRef.set(commentData);
     print("Comment Added to both Place and User profile");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {}
+    });
   }
 
   @override
@@ -144,7 +154,14 @@ class _AddState extends State<Add> {
                   onPressed: () async {
                     if (formstate.currentState!.validate()) {
                       await addComment();
-
+                      await NotificationHelper.sendPushMessage(
+                          deviceToken:
+                              "evdBr7Z9QDSQOfyDKwjL7E:APA91bFUIQaEYpCmqduF4BSrPSnEJMWJfXjLbRe3ODl-vIQEUUG6FTcx2FEhSinP69OR6x9Dq1ZVUO-Lh7qgw9sA_Lt1ncc0jtND1FSFsscVZloXlloK-0c",
+                          title: "Comment ",
+                          body: "Comment Added 🤦‍♂️☑️");
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("${"Comment Added ✅"}")));
                       if (context.mounted) {
                         Navigator.of(context).pop();
                       }

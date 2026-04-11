@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/Reviews/add.dart';
 import 'package:flutter_application_1/Reviews/edit.dart';
-
+import 'package:flutter_application_1/notification_helper.dart';
 
 class Review extends StatefulWidget {
   final String noteId;
@@ -24,10 +25,8 @@ class _ReviewState extends State<Review> {
         .collection("place")
         .doc(widget.noteId)
         .collection("note")
-        .where(Filter.or(
-          Filter("status", isEqualTo: "Public"),
-          Filter("userId", isEqualTo: uid)
-          ))
+        .where(Filter.or(Filter("status", isEqualTo: "Public"),
+            Filter("userId", isEqualTo: uid)))
         .get();
     data = querySnapshot.docs;
     isLodaing = false;
@@ -48,6 +47,14 @@ class _ReviewState extends State<Review> {
   void initState() {
     super.initState();
     getData();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        print("========++++++++++=============++++++++++++=============");
+        print("title is:--  ${message.notification!.title}");
+        print("body is:--  ${message.notification!.body}");
+        print("========++++++++++=============++++++++++++=============");
+      }
+    });
   }
 
   @override
@@ -152,8 +159,18 @@ class _ReviewState extends State<Review> {
                                 ),
                                 const SizedBox(height: 8),
                                 InkWell(
-                                  onTap: () {
+                                  onTap: () async {
                                     deleteComment(data[index].id);
+                                    await NotificationHelper.sendPushMessage(
+                                        deviceToken:
+                                            "c1NGcX5hR3-qgerNEMp3tg:APA91bENy1BTGEYtdSO4MaAYQxoEsmvZXodcuzuZzuOTXrJJw1FUfj087khEWkQErR-vIwq_yx6YyeB4cUEsJAX07aRYZdtp-TCxxhxN0zZkr_-6_3eBvxs",
+                                        title: "Comment ",
+                                        body: "Comment Added 🤦‍♂️☑️");
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                "${"Comment Deleted ✅"}")));
                                   },
                                   child: const Icon(Icons.delete,
                                       color: Colors.red, size: 20),

@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/notification_helper.dart';
 
 class EditComment extends StatefulWidget {
   final String commentId;
@@ -31,6 +33,9 @@ class _EditCommentState extends State<EditComment> {
     super.initState();
     commentController.text = widget.oldComment;
     isPublic = widget.oldStatus;
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {}
+    });
   }
 
   updateComment() async {
@@ -138,9 +143,15 @@ class _EditCommentState extends State<EditComment> {
                             setState(() {
                               isSaving = true;
                             });
-
                             await updateComment();
-
+                            await NotificationHelper.sendPushMessage(
+                                deviceToken:
+                                    "c1NGcX5hR3-qgerNEMp3tg:APA91bENy1BTGEYtdSO4MaAYQxoEsmvZXodcuzuZzuOTXrJJw1FUfj087khEWkQErR-vIwq_yx6YyeB4cUEsJAX07aRYZdtp-TCxxhxN0zZkr_-6_3eBvxs",
+                                title: "Comment ",
+                                body: "Comment Edited ☑️");
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text("${"Comment Edited ✅"}")));
                             if (context.mounted) {
                               Navigator.of(context).pop();
                             }

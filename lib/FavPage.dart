@@ -74,7 +74,7 @@ class _FavPageState extends State<FavPage> {
                         },
                         child: ListTile(
                           leading: OctoImage(
-                            image: AssetImage(
+                            image: NetworkImage(
                               favPlaces[index]["imageLink"],
                             ),
                             placeholderBuilder:

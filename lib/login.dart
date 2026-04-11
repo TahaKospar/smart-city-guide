@@ -1,6 +1,7 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/Inputtext.dart';
 import 'package:flutter_application_1/icon.dart';
@@ -83,6 +84,27 @@ class _LoginState extends State<Login> {
       print("Welcome back ${doc["name"]}");
     }
     Navigator.of(context).pushReplacementNamed("homepage");
+  }
+
+  saveUserToken() async {
+    String? token = await FirebaseMessaging.instance.getToken();
+    var user = FirebaseAuth.instance.currentUser;
+
+    if (user != null && token != null) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .update({
+        'fcmToken': token, // حفظنا التوكن في بروفايل المستخدم
+      });
+      print("✅ Token Saved: $token");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    saveUserToken();
   }
 
   @override

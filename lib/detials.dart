@@ -21,7 +21,6 @@ class _DetialsState extends State<Detials> {
     bool serviceEnable;
     LocationPermission permission;
 
-
     serviceEnable = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnable) {
       AwesomeDialog(
@@ -83,7 +82,7 @@ class _DetialsState extends State<Detials> {
           children: [
             Column(
               children: [
-                Image.asset(
+                Image.network(
                   widget.data["imageLink"],
                 ),
                 SizedBox(

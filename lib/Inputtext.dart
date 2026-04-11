@@ -7,7 +7,6 @@ class Inputtext extends StatefulWidget {
   final String? isIcon;
   final TextEditingController? myController;
   final String? Function(String?)? validator;
-
   const Inputtext({
     super.key,
     required this.hintText,
@@ -17,7 +16,6 @@ class Inputtext extends StatefulWidget {
     this.isIcon,
     this.validator,
   });
-
   @override
   State<Inputtext> createState() => _InputtextState();
 }
