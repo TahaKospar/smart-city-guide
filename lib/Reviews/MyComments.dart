@@ -76,6 +76,9 @@ class _MyCommentsState extends State<MyComments> {
                         commentData["placeTitle"] ?? "Unknown Place";
                     String placeImage = commentData["placeImage"] ?? "";
 
+                    // ✅ طباعة الرابط للتأكد
+                    print("Image URL: $placeImage");
+
                     return Card(
                       margin: const EdgeInsets.symmetric(
                           vertical: 8, horizontal: 10),
@@ -95,8 +98,7 @@ class _MyCommentsState extends State<MyComments> {
                                 .doc(commentData["placeId"])
                                 .get();
 
-                            if (context.mounted)
-                              Navigator.of(context).pop(); 
+                            if (context.mounted) Navigator.of(context).pop();
 
                             if (placeDoc.exists) {
                               Map<String, dynamic> fullPlaceData =
@@ -113,7 +115,7 @@ class _MyCommentsState extends State<MyComments> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text("The Place is Note Found")),
+                                      content: Text("The Place is Not Found")),
                                 );
                               }
                             }
@@ -125,14 +127,29 @@ class _MyCommentsState extends State<MyComments> {
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: placeImage.isNotEmpty
-                              ? Image.asset(
+                              ? Image.network(
                                   placeImage,
                                   width: 50,
                                   height: 50,
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    print("Error loading image: $error");
+                                    return Container(
+                                      width: 50,
+                                      height: 50,
+                                      color: Colors.grey,
+                                      child: const Icon(Icons.broken_image,
+                                          size: 20),
+                                    );
+                                  },
                                 )
                               : Container(
-                                  width: 50, height: 50, color: Colors.grey),
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey,
+                                  child: const Icon(Icons.image_not_supported,
+                                      size: 20),
+                                ),
                         ),
                         title: Row(
                           children: [
@@ -148,8 +165,9 @@ class _MyCommentsState extends State<MyComments> {
                               st,
                               style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    st == "Public" ? Colors.green : Colors.grey,
+                                color: st == "Public"
+                                    ? Colors.green
+                                    : Colors.grey,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -177,7 +195,6 @@ class _MyCommentsState extends State<MyComments> {
                                               commentData["status"] ?? "Public",
                                         ),
                                       ));
-
                                       getData();
                                     },
                                     child: const Icon(Icons.edit,
