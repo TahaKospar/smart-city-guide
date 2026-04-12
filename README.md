@@ -5,43 +5,63 @@ The app focuses on clean UI, responsiveness, and real-time data from Firebase.
 
 ---
 
-## 📱 App Screenshots
+## ✨ Features & Walkthrough
 
-| Login | Home | Details | Favorites |
-|:---:|:---:|:---:|:---:|
-| <img src="screenshots/image1.jpeg" width="180"/> | <img src="screenshots/image2.jpeg" width="180"/> | <img src="screenshots/image3.jpeg" width="180"/> | <img src="screenshots/image4.png" width="180"/> |
+Here is a detailed look at what the application offers, with real screenshots from the app:
 
-| Add Place | Drawer | Search | Reviews |
-|:---:|:---:|:---:|:---:|
-| <img src="screenshots/image5.jpeg" width="180"/> | <img src="screenshots/image6.jpeg" width="180"/> | <img src="screenshots/image7.jpeg" width="180"/> | <img src="screenshots/image8.jpeg" width="180"/> |
+### 🔐 Authentication
+Secure login and registration system for users.
+<p align="center">
+  <img src="screenshots/image17.jpeg" width="220"/>
+  <img src="screenshots/image16.jpeg" width="220"/>
+</p>
 
-| Comments | Map | Profile |
-|:---:|:---:|:---:|
-| <img src="screenshots/image9.jpeg" width="180"/> | <img src="screenshots/image10.jpeg" width="180"/> | <img src="screenshots/image11.jpeg" width="180"/> |
+### 🏠 Explore Places & Navigation
+Browse popular tourist attractions, restaurants, and hotels easily through a categorized grid and access settings via a clean side drawer.
+<p align="center">
+  <img src="screenshots/image3.jpeg" width="220"/>
+  <img src="screenshots/image6.jpeg" width="220"/>
+</p>
+
+### ℹ️ Place Details & Maps
+View detailed information about any specific location, including descriptions, and view its exact location via Google Maps API.
+<p align="center">
+  <img src="screenshots/image2.jpeg" width="220"/>
+  <img src="screenshots/image7.jpeg" width="220"/>
+</p>
+
+### ❤️ Favorites & Search
+Easily search for specific places by name and save your top spots to a dedicated favorites list for quick access.
+<p align="center">
+  <img src="screenshots/image9.jpeg" width="220"/>
+  <img src="screenshots/image14.jpeg" width="220"/>
+</p>
+
+### ➕ Add New Places
+Users can contribute by adding new places, complete with location details and image uploads (powered by Supabase Storage).
+<p align="center">
+  <img src="screenshots/image10.jpeg" width="220"/>
+  <img src="screenshots/image5.jpeg" width="220"/>
+</p>
+
+### 💬 Community Reviews & Comments
+Read and add reviews or comments to share experiences about different locations.
+<p align="center">
+  <img src="screenshots/image8.jpeg" width="220"/>
+  <img src="screenshots/image13.jpeg" width="220"/>
+</p>
 
 > *The app adapts smoothly to different screen sizes (Mobile / Tablet).*
-
----
-
-## ✨ Key Features
-
-- 🗺️ Browse popular tourist attractions, restaurants, and hotels  
-- 🔍 Search places by name  
-- ❤️ Save/remove favorite places  
-- ➕ Add new places with image uploads  
-- 💬 Add comments and reviews  
-- 🔔 Push notifications (Firebase Cloud Messaging)  
-- 📱 Responsive UI (Mobile + Tablet)  
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Framework:** Flutter & Dart
-- **State Management:** setState, FutureBuilder, StreamBuilder (learning Provider/Bloc)
-- **Backend:** Firebase (Auth, Firestore, Storage)
+- **State Management:** Provider / StatefulWidget
+- **Backend:** Firebase (Auth, Firestore)
 - **Image Storage:** Supabase Storage
-- **Maps:** Geolocator + Google Maps API (ready)
+- **Maps:** Geolocator + Google Maps API
 - **Notifications:** Firebase Cloud Messaging
 
 ---
@@ -49,8 +69,8 @@ The app focuses on clean UI, responsiveness, and real-time data from Firebase.
 ## 🚀 How to Run
 
 1. Clone the repository:
-```bash
-git clone https://github.com/TahaKospar/smart-city-guide.git
+   ```bash
+   git clone [https://github.com/TahaKospar/smart-city-guide.git](https://github.com/TahaKospar/smart-city-guide.git)
 2.Install dependencies:
     flutter pub get
 3.Run the app:
