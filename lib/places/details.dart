@@ -1,21 +1,21 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Reviews/review.dart';
+import 'package:flutter_application_1/comments/review.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class Detials extends StatefulWidget {
+class Details extends StatefulWidget {
   final data;
-  const Detials({
+  const Details({
     super.key,
     this.data,
   });
 
   @override
-  State<Detials> createState() => _DetialsState();
+  State<Details> createState() => _DetailsState();
 }
 
-class _DetialsState extends State<Detials> {
+class _DetailsState extends State<Details> {
   String? distaceText;
   getPermission() async {
     bool serviceEnable;

@@ -78,7 +78,7 @@ class _LoginState extends State<Login> {
       await usrRef.set({
         "name": userName ?? user.displayName ?? "User",
         "email": user.email,
-        "photo": user.photoURL ?? ""
+        "photo": user.photoURL ?? "U"
       });
     } else {
       print("Welcome back ${doc["name"]}");
@@ -148,7 +148,7 @@ class _LoginState extends State<Login> {
                         ),
                         SizedBox(height: 10),
                         Text(
-                          "  E-mial",
+                          "  Email",
                           style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
@@ -156,7 +156,7 @@ class _LoginState extends State<Login> {
                         ),
                         Inputtext(
                           type: TextInputType.emailAddress,
-                          hintText: "Enter E-mail",
+                          hintText: "Enter Email",
                           isPassword: false,
                           myController: email,
                         ),
@@ -181,7 +181,7 @@ class _LoginState extends State<Login> {
                                   animType: AnimType.leftSlide,
                                   dialogType: DialogType.error,
                                   title: "Email is Empty",
-                                  desc: "Please Enter Emial First5",
+                                  desc: "Please Enter Email First",
                                   btnOkOnPress: () {},
                                 ).show();
                                 return;
@@ -259,13 +259,13 @@ class _LoginState extends State<Login> {
                                         title: "Email Not Verified",
                                         btnOkOnPress: () {},
                                         desc:
-                                            "please Verifi from your account first")
+                                            "please Verify from your account first")
                                     .show();
                               }
                             } on FirebaseAuthException catch (e) {
                               isLoading = false;
                               setState(() {});
-                              if (e.code == "user-not-found") {
+                              if (e.code == "invalid-email") {
                                 message = "Error Data";
                               } else if (e.code == "invalid-credential") {
                                 message = "Error Data";

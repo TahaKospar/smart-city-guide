@@ -3,16 +3,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/FavPage.dart';
-import 'package:flutter_application_1/Reviews/MyComments.dart';
-import 'package:flutter_application_1/detials.dart';
+import 'package:flutter_application_1/comments/MyComments.dart';
+import 'package:flutter_application_1/places/FavPage.dart';
 import 'package:flutter_application_1/places/addPlace.dart';
+import 'package:flutter_application_1/places/details.dart';
+import 'package:flutter_application_1/places/favorites_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:octo_image/octo_image.dart';
+import 'package:provider/provider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
-
   @override
   State<Homepage> createState() => _HomepageState();
 }
@@ -27,70 +28,102 @@ class _HomepageState extends State<Homepage>
     print("------------------------------------------------------");
   }
 
-  bool isLodaing = true;
-  List<QueryDocumentSnapshot> touristData = [];
-  List<QueryDocumentSnapshot> restaurantData = [];
-  List<QueryDocumentSnapshot> hotelData = [];
-  getData() async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection("place")
-        .where("isApproved", isEqualTo: true)
-        .get();
+  bool isLoading = true;
 
-    touristData = querySnapshot.docs.where((element) {
-      final data = element.data() as Map<String, dynamic>;
-      return data.containsKey('category') && data['category'] == "tourist";
-    }).toList();
-
-    restaurantData = querySnapshot.docs.where((element) {
-      final data = element.data() as Map<String, dynamic>;
-      return data.containsKey('category') && data['category'] == "restaurant";
-    }).toList();
-
-    hotelData = querySnapshot.docs.where((element) {
-      final data = element.data() as Map<String, dynamic>;
-      return data.containsKey('category') && data['category'] == "hotel";
-    }).toList();
-
-    isLodaing = false;
-    setState(() {});
-  }
-
-  addOrRemoveFav(String placeId) async {
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-
-//id بتدور على حاجة، أو عايز تجيب لستة حاجات، أو بتضيف حاجة جديدة ومعايا ال
-    CollectionReference favRef = FirebaseFirestore.instance
-        .collection("place")
-        .doc(placeId)
-        .collection("favorite");
-    var favCheck = await favRef.where("userId", isEqualTo: uid).get();
-
-    if (favCheck.docs.isEmpty) {
-      await favRef.add({"userId": uid});
-    } else {
-      await favRef.doc(favCheck.docs.first.id).delete();
-    }
-    setState(() {});
+  Widget getGridview(List<QueryDocumentSnapshot> data) {
+    var favProvider = context.watch<FavProvider>();
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
+          childAspectRatio: (MediaQuery.of(context).size.width /
+              (MediaQuery.of(context).size.height * 0.9)),
+          crossAxisSpacing: 20,
+          mainAxisSpacing: 20),
+      itemCount: data.length,
+      itemBuilder: (context, index) {
+        return InkWell(
+          onTap: () {
+            Map<String, dynamic> placeData =
+                data[index].data() as Map<String, dynamic>;
+            placeData["id"] = data[index].id;
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => Details(data: placeData),
+            ));
+          },
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: OctoImage(
+                  image: NetworkImage(data[index]["imageLink"]),
+                  placeholderBuilder:
+                      OctoPlaceholder.circularProgressIndicator(),
+                  errorBuilder: OctoError.icon(color: Colors.red),
+                  fit: BoxFit.cover,
+                  height: 200,
+                  width: double.infinity,
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Text(
+                    data[index]["imageTitle"],
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      favProvider.addOrRemoveFav(data[index].id, data[index]);
+                    },
+                    icon: Icon(
+                      favProvider.favPlaces.any((e) => e.id == data[index].id)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: favProvider.favPlaces
+                              .any((e) => e.id == data[index].id)
+                          ? Colors.red
+                          : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                data[index]["location"],
+                style: const TextStyle(fontWeight: FontWeight.w200),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                data[index]["description"],
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   TabController? tabcontroller;
   @override
   void initState() {
     super.initState();
-    getData();
+    Provider.of<FavProvider>(context, listen: false).fetchAllPlaces();
     tabcontroller = TabController(length: 3, vsync: this);
     getToken();
   }
 
   @override
   void dispose() {
-    tabcontroller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    var favProvider = context.watch<FavProvider>();
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -115,11 +148,11 @@ class _HomepageState extends State<Homepage>
             String userName = "User ";
             String UserEmail =
                 FirebaseAuth.instance.currentUser!.email ?? "No Email";
-            String userPhote = "";
+            String userPhoto = "";
 
             if (snapshot.hasData && snapshot.data!.exists) {
               userName = snapshot.data!["name"] ?? "User";
-              userPhote = snapshot.data!["photo"] ?? "";
+              userPhoto = snapshot.data!["photo"] ?? "";
             }
             return Column(
               children: [
@@ -132,8 +165,8 @@ class _HomepageState extends State<Homepage>
                     leading: CircleAvatar(
                       radius: 30,
                       backgroundImage:
-                          userPhote.isNotEmpty ? NetworkImage(userPhote) : null,
-                      child: userPhote.isEmpty
+                          userPhoto.isNotEmpty ? NetworkImage(userPhoto) : null,
+                      child: userPhoto.isEmpty
                           ? const Icon(Icons.person, size: 30)
                           : null,
                     ),
@@ -208,11 +241,7 @@ class _HomepageState extends State<Homepage>
             onPressed: () {
               showSearch(
                   context: context,
-                  delegate: CustomSearch(listData: [
-                    ...touristData,
-                    ...restaurantData,
-                    ...hotelData
-                  ]));
+                  delegate: CustomSearch(favProvider: favProvider));
             },
             icon: const Icon(Icons.search),
           )
@@ -223,270 +252,22 @@ class _HomepageState extends State<Homepage>
           Tab(icon: Icon(Icons.hotel_sharp, size: 30), text: "Hotels"),
         ]),
       ),
-      body: isLodaing
-          ? const Center(child: CircularProgressIndicator())
+      body: favProvider.isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
           : TabBarView(controller: tabcontroller, children: [
-              GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                    childAspectRatio: (MediaQuery.of(context).size.width /
-                        (MediaQuery.of(context).size.height * 0.9)),
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20),
-                itemCount: touristData.length,
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () {
-                      Map<String, dynamic> placeData =
-                          touristData[index].data() as Map<String, dynamic>;
-                      placeData["id"] = touristData[index].id;
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => Detials(data: placeData),
-                      ));
-                    },
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: OctoImage(
-                            image:
-                                NetworkImage(touristData[index]["imageLink"]),
-                            placeholderBuilder:
-                                OctoPlaceholder.circularProgressIndicator(),
-                            errorBuilder: OctoError.icon(color: Colors.red),
-                            fit: BoxFit.cover,
-                            height: 200,
-                            width: double.infinity,
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Text(
-                              touristData[index]["imageTitle"],
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                addOrRemoveFav(touristData[index].id);
-                              },
-                              icon: FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection("place")
-                                    .doc(touristData[index].id)
-                                    .collection("favorite")
-                                    .where("userId",
-                                        isEqualTo: FirebaseAuth
-                                            .instance.currentUser?.uid)
-                                    .get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData &&
-                                      snapshot.data!.docs.isNotEmpty) {
-                                    return const Icon(Icons.favorite,
-                                        color: Colors.red);
-                                  }
-                                  return const Icon(Icons.favorite_border);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          touristData[index]["location"],
-                          style: const TextStyle(fontWeight: FontWeight.w200),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          touristData[index]["description"],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                    childAspectRatio: (MediaQuery.of(context).size.width /
-                        (MediaQuery.of(context).size.height * 0.9)),
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20),
-                itemCount: restaurantData.length,
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () {
-                      Map<String, dynamic> placeData =
-                          restaurantData[index].data() as Map<String, dynamic>;
-                      placeData["id"] = restaurantData[index].id;
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => Detials(data: placeData),
-                      ));
-                    },
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          // تعديل الصورة هنا
-                          child: OctoImage(
-                            image: NetworkImage(
-                                restaurantData[index]["imageLink"]),
-                            placeholderBuilder:
-                                OctoPlaceholder.circularProgressIndicator(),
-                            errorBuilder: OctoError.icon(color: Colors.red),
-                            fit: BoxFit.cover,
-                            height: 200,
-                            width: double.infinity,
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Text(
-                              restaurantData[index]["imageTitle"],
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                addOrRemoveFav(restaurantData[index].id);
-                              },
-                              icon: FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection("place")
-                                    .doc(restaurantData[index].id)
-                                    .collection("favorite")
-                                    .where("userId",
-                                        isEqualTo: FirebaseAuth
-                                            .instance.currentUser?.uid)
-                                    .get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData &&
-                                      snapshot.data!.docs.isNotEmpty) {
-                                    return const Icon(Icons.favorite,
-                                        color: Colors.red);
-                                  }
-                                  return const Icon(Icons.favorite_border);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          restaurantData[index]["location"],
-                          style: const TextStyle(fontWeight: FontWeight.w200),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          restaurantData[index]["description"],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                    childAspectRatio: (MediaQuery.of(context).size.width /
-                        (MediaQuery.of(context).size.height * 0.9)),
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20),
-                itemCount: hotelData.length,
-                itemBuilder: (context, index) {
-                  return InkWell(
-                    onTap: () {
-                      Map<String, dynamic> placeData =
-                          hotelData[index].data() as Map<String, dynamic>;
-                      placeData["id"] = hotelData[index].id;
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => Detials(data: placeData),
-                      ));
-                    },
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          // تعديل الصورة هنا
-                          child: OctoImage(
-                            image: NetworkImage(hotelData[index]["imageLink"]),
-                            placeholderBuilder:
-                                OctoPlaceholder.circularProgressIndicator(),
-                            errorBuilder: OctoError.icon(color: Colors.red),
-                            fit: BoxFit.cover,
-                            height: 200,
-                            width: double.infinity,
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Text(
-                              hotelData[index]["imageTitle"],
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                addOrRemoveFav(hotelData[index].id);
-                              },
-                              icon: FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection("place")
-                                    .doc(hotelData[index].id)
-                                    .collection("favorite")
-                                    .where("userId",
-                                        isEqualTo: FirebaseAuth
-                                            .instance.currentUser?.uid)
-                                    .get(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData &&
-                                      snapshot.data!.docs.isNotEmpty) {
-                                    return const Icon(Icons.favorite,
-                                        color: Colors.red);
-                                  }
-                                  return const Icon(Icons.favorite_border);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          hotelData[index]["location"],
-                          style: const TextStyle(fontWeight: FontWeight.w200),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          hotelData[index]["description"],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              getGridview(favProvider.touristData),
+              getGridview(favProvider.restaurantData),
+              getGridview(favProvider.hotelData),
             ]),
     );
   }
 }
 
 class CustomSearch extends SearchDelegate {
-  final List listData;
-  CustomSearch({required this.listData});
+  final FavProvider favProvider;
+  CustomSearch({required this.favProvider});
   @override
   List<Widget>? buildActions(BuildContext context) {
     return [
@@ -509,7 +290,12 @@ class CustomSearch extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    final getData = listData
+    final allData = [
+      ...favProvider.touristData,
+      ...favProvider.restaurantData,
+      ...favProvider.hotelData,
+    ];
+    final getData = allData
         .where((element) => element["imageTitle"]
             .toString()
             .toLowerCase()
@@ -524,7 +310,7 @@ class CustomSearch extends SearchDelegate {
                 getData[index].data() as Map<String, dynamic>;
             placeData["id"] = getData[index].id;
             Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => Detials(data: placeData),
+              builder: (context) => Details(data: placeData),
             ));
           },
           leading: ClipRRect(
@@ -547,9 +333,14 @@ class CustomSearch extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    final allData = [
+      ...favProvider.touristData,
+      ...favProvider.restaurantData,
+      ...favProvider.hotelData,
+    ];
     final sourceList = query.isEmpty
-        ? listData
-        : listData
+        ? allData
+        : allData
             .where((element) => element["imageTitle"]
                 .toString()
                 .toLowerCase()
@@ -565,7 +356,7 @@ class CustomSearch extends SearchDelegate {
                   sourceList[index].data() as Map<String, dynamic>;
               placeData["id"] = sourceList[index].id;
               Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => Detials(data: placeData),
+                builder: (context) => Details(data: placeData),
               ));
             },
             leading: ClipRRect(

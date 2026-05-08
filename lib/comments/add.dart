@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/comments/providerComment.dart';
 import 'package:flutter_application_1/notification_helper.dart';
+import 'package:provider/provider.dart';
 
 class Add extends StatefulWidget {
   final String? docid;
@@ -17,54 +17,6 @@ class _AddState extends State<Add> {
 
   GlobalKey<FormState> formstate = GlobalKey();
   String? Function(String?)? validator;
-  TextEditingController imageLink = TextEditingController();
-  TextEditingController comment = TextEditingController();
-
-  addComment() async {
-    var user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    var userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .get();
-
-    var placeDoc = await FirebaseFirestore.instance
-        .collection("place")
-        .doc(widget.docid)
-        .get();
-    String userName = userDoc.data()?["name"] ?? "User";
-    String userImage = userDoc.data()?["photo"] ?? "";
-    String placeName = placeDoc.data()?["imageTitle"] ?? "Unknown place";
-    String placeImage = placeDoc.data()?["imageLink"] ?? "";
-
-    Map<String, dynamic> commentData = {
-      "comment": comment.text,
-      "status": isPublic,
-      "userId": user.uid,
-      "userName": userName,
-      "userImage": userImage,
-      "placeId": widget.docid,
-      "placeTitle": placeName,
-      "placeImage": placeImage,
-    };
-
-    // لما تعوز تمسح، تعدل، أو تضيف بيانات في مكان محدد.
-    DocumentReference placeCommentRef = FirebaseFirestore.instance
-        .collection("place")
-        .doc(widget.docid)
-        .collection("note")
-        .doc();
-
-    DocumentReference userCommentRef = FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .collection("my_comments")
-        .doc(placeCommentRef.id);
-
-    await placeCommentRef.set(commentData);
-    await userCommentRef.set(commentData);
-    print("Comment Added to both Place and User profile");
-  }
 
   @override
   void initState() {
@@ -75,7 +27,13 @@ class _AddState extends State<Add> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    var providerAdd = context.watch<ProviderComment>();
     return Scaffold(
       appBar: AppBar(
         title: Text("Add comment"),
@@ -103,7 +61,7 @@ class _AddState extends State<Add> {
                         return "Can't be Empty";
                       }
                     },
-                    controller: comment,
+                    controller: providerAdd.comment,
                     maxLines: 5,
                     minLines: 3,
                     decoration: InputDecoration(
@@ -153,7 +111,8 @@ class _AddState extends State<Add> {
                       backgroundColor: Colors.orange),
                   onPressed: () async {
                     if (formstate.currentState!.validate()) {
-                      await addComment();
+                      providerAdd.addComment(widget.docid!, isPublic);
+                      Navigator.of(context).pop();
                       await NotificationHelper.sendPushMessage(
                           deviceToken:
                               "evdBr7Z9QDSQOfyDKwjL7E:APA91bFUIQaEYpCmqduF4BSrPSnEJMWJfXjLbRe3ODl-vIQEUUG6FTcx2FEhSinP69OR6x9Dq1ZVUO-Lh7qgw9sA_Lt1ncc0jtND1FSFsscVZloXlloK-0c",
@@ -162,9 +121,7 @@ class _AddState extends State<Add> {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text("${"Comment Added ✅"}")));
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
+                      if (context.mounted) {}
                     }
                   },
                   child: Text(

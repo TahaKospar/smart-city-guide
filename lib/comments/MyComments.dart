@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Reviews/edit.dart';
-import 'package:flutter_application_1/detials.dart';
+import 'package:flutter_application_1/comments/edit.dart';
+import 'package:flutter_application_1/comments/providerComment.dart';
+import 'package:flutter_application_1/places/details.dart';
+import 'package:provider/provider.dart';
 
 class MyComments extends StatefulWidget {
   const MyComments({super.key});
@@ -12,64 +14,34 @@ class MyComments extends StatefulWidget {
 }
 
 class _MyCommentsState extends State<MyComments> {
-  bool isLodaing = true;
-  List<QueryDocumentSnapshot> data = [];
-
-  getData() async {
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collectionGroup("note")
-        .where("userId", isEqualTo: uid)
-        .get();
-
-    data = querySnapshot.docs;
-    isLodaing = false;
-    if (mounted) setState(() {});
-  }
-
-  deleteComment(String commintId, String placeId) async {
-    await FirebaseFirestore.instance
-        .collection("place")
-        .doc(placeId)
-        .collection("note")
-        .doc(commintId)
-        .delete();
-
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection("my_comments")
-        .doc(commintId)
-        .delete();
-
-    getData();
-  }
 
   @override
   void initState() {
     super.initState();
-    getData();
+    Provider.of<ProviderComment>(context, listen: false)
+        .getDataFormMyComments();
   }
 
   @override
   Widget build(BuildContext context) {
+    var commentProvider = Provider.of<ProviderComment>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Comments"),
         backgroundColor: Colors.cyan,
         centerTitle: true,
       ),
-      body: isLodaing
+      body:commentProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : data.isEmpty
+          :commentProvider.data.isEmpty
               ? const Center(child: Text("No comments found"))
               : ListView.builder(
-                  itemCount: data.length,
+                  itemCount: commentProvider.data.length,
                   itemBuilder: (context, index) {
                     String currentUserId =
                         FirebaseAuth.instance.currentUser!.uid;
                     var commentData =
-                        data[index].data() as Map<String, dynamic>;
+                        commentProvider.data[index].data() as Map<String, dynamic>;
                     String commentOwnerId = commentData["userId"] ?? "";
                     String st = commentData["status"] ?? "";
                     String placeName =
@@ -108,7 +80,7 @@ class _MyCommentsState extends State<MyComments> {
                               if (context.mounted) {
                                 Navigator.of(context).push(MaterialPageRoute(
                                   builder: (context) =>
-                                      Detials(data: fullPlaceData),
+                                      Details(data: fullPlaceData),
                                 ));
                               }
                             } else {
@@ -165,9 +137,8 @@ class _MyCommentsState extends State<MyComments> {
                               st,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: st == "Public"
-                                    ? Colors.green
-                                    : Colors.grey,
+                                color:
+                                    st == "Public" ? Colors.green : Colors.grey,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -187,7 +158,7 @@ class _MyCommentsState extends State<MyComments> {
                                       await Navigator.of(context)
                                           .push(MaterialPageRoute(
                                         builder: (context) => EditComment(
-                                          commentId: data[index].id,
+                                          commentId: commentProvider.data[index].id,
                                           placeId: commentData["placeId"],
                                           oldComment:
                                               commentData["comment"] ?? "",
@@ -195,7 +166,7 @@ class _MyCommentsState extends State<MyComments> {
                                               commentData["status"] ?? "Public",
                                         ),
                                       ));
-                                      getData();
+                                      commentProvider.getDataFormMyComments();
                                     },
                                     child: const Icon(Icons.edit,
                                         color: Colors.blue, size: 20),
@@ -203,7 +174,8 @@ class _MyCommentsState extends State<MyComments> {
                                   const SizedBox(height: 8),
                                   InkWell(
                                     onTap: () {
-                                      deleteComment(data[index].id,
+                                      commentProvider.deleteComment(
+                                          commentProvider.data[index].id,
                                           commentData["placeId"]);
                                     },
                                     child: const Icon(Icons.delete,

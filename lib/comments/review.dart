@@ -1,10 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/Reviews/add.dart';
-import 'package:flutter_application_1/Reviews/edit.dart';
+import 'package:flutter_application_1/comments/add.dart';
+import 'package:flutter_application_1/comments/edit.dart';
+import 'package:flutter_application_1/comments/providerComment.dart';
 import 'package:flutter_application_1/notification_helper.dart';
+import 'package:provider/provider.dart';
 
 class Review extends StatefulWidget {
   final String noteId;
@@ -15,38 +16,10 @@ class Review extends StatefulWidget {
 }
 
 class _ReviewState extends State<Review> {
-  bool isLodaing = true;
-  List<QueryDocumentSnapshot> data = [];
-
-  getData() async {
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-    //لما تجيب كل التعليقات، أو كل الأماكن في التصنيف.
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection("place")
-        .doc(widget.noteId)
-        .collection("note")
-        .where(Filter.or(Filter("status", isEqualTo: "Public"),
-            Filter("userId", isEqualTo: uid)))
-        .get();
-    data = querySnapshot.docs;
-    isLodaing = false;
-    setState(() {});
-  }
-
-  deleteComment(String commintId) async {
-    await FirebaseFirestore.instance
-        .collection("place")
-        .doc(widget.noteId)
-        .collection("note")
-        .doc(commintId)
-        .delete();
-    getData();
-  }
-
   @override
   void initState() {
+    Provider.of<ProviderComment>(context, listen: false).getData(widget.noteId);
     super.initState();
-    getData();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
         print("========++++++++++=============++++++++++++=============");
@@ -59,6 +32,7 @@ class _ReviewState extends State<Review> {
 
   @override
   Widget build(BuildContext context) {
+    var commentProvider = context.watch<ProviderComment>();
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -67,7 +41,6 @@ class _ReviewState extends State<Review> {
               docid: widget.noteId,
             ),
           ));
-          getData();
         },
         child: Icon(Icons.add),
       ),
@@ -76,15 +49,16 @@ class _ReviewState extends State<Review> {
         backgroundColor: Colors.cyan,
         centerTitle: true,
       ),
-      body: isLodaing
+      body: commentProvider.isLoading
           ? Center(
               child: CircularProgressIndicator(),
             )
           : ListView.builder(
-              itemCount: data.length,
+              itemCount: commentProvider.data.length,
               itemBuilder: (context, index) {
                 String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-                var commentData = data[index].data() as Map<String, dynamic>;
+                var commentData =
+                    commentProvider.data[index].data() as Map<String, dynamic>;
                 String commentOwnerId = commentData["userId"] ?? "";
                 String userName = commentData["userName"] ?? "unKnown";
                 String userImage = commentData["userImage"] ?? "";
@@ -113,7 +87,6 @@ class _ReviewState extends State<Review> {
                               userName,
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
@@ -130,8 +103,7 @@ class _ReviewState extends State<Review> {
                       ),
                       subtitle: Text(
                         commentData["comment"],
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20),
+                        style: TextStyle(fontSize: 15),
                       ),
                       trailing: currentUserId == commentOwnerId
                           ? Column(
@@ -144,15 +116,14 @@ class _ReviewState extends State<Review> {
                                     await Navigator.of(context)
                                         .push(MaterialPageRoute(
                                       builder: (context) => EditComment(
-                                        commentId: data[index].id,
+                                        commentId:
+                                            commentProvider.data[index].id,
                                         placeId: commentData["placeId"] ??
                                             widget.noteId,
                                         oldComment: commentData["comment"],
                                         oldStatus: commentData["status"],
                                       ),
                                     ));
-
-                                    getData();
                                   },
                                   child: const Icon(Icons.edit,
                                       color: Colors.blue, size: 20),
@@ -160,12 +131,14 @@ class _ReviewState extends State<Review> {
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    deleteComment(data[index].id);
+                                    commentProvider.deleteComment(
+                                        commentProvider.data[index].id,
+                                        widget.noteId);
                                     await NotificationHelper.sendPushMessage(
                                         deviceToken:
                                             "c1NGcX5hR3-qgerNEMp3tg:APA91bENy1BTGEYtdSO4MaAYQxoEsmvZXodcuzuZzuOTXrJJw1FUfj087khEWkQErR-vIwq_yx6YyeB4cUEsJAX07aRYZdtp-TCxxhxN0zZkr_-6_3eBvxs",
                                         title: "Comment ",
-                                        body: "Comment Added 🤦‍♂️☑️");
+                                        body: "Comment Deleted 🤦‍♂️☑️");
                                     if (!mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(

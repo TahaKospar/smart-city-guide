@@ -67,12 +67,12 @@ class _RegisterState extends State<Register> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    "  E-mial",
+                    "  Email",
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                   ),
                   Inputtext(
                     type: TextInputType.emailAddress,
-                    hintText: "Enter E-mail",
+                    hintText: "Enter Email",
                     isPassword: false,
                     myController: email,
                   ),

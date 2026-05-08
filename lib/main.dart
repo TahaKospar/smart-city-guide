@@ -1,14 +1,28 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/comments/providerComment.dart';
 import 'package:flutter_application_1/homePage.dart';
-import 'package:flutter_application_1/login.dart';
-import 'package:flutter_application_1/register.dart';
+import 'package:flutter_application_1/auth/login.dart';
+import 'package:flutter_application_1/auth/register.dart';
+import 'package:flutter_application_1/places/favorites_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(
+        create: (context) => FavProvider(),
+      ),
+      ChangeNotifierProvider(
+        create: (context) => ProviderComment(),
+      ),
+      
+    ],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -33,7 +47,6 @@ class MyApp extends StatelessWidget {
               body: Center(child: Text('Error: ${snapshot.error}')),
             );
           }
-          // التهيئة تمت بنجاح
           final user = FirebaseAuth.instance.currentUser;
           if (user != null && user.emailVerified) {
             return const Homepage();

@@ -109,7 +109,7 @@ class _EditCommentState extends State<EditComment> {
                           groupValue: isPublic,
                           onChanged: (val) {
                             setState(() {
-                              isPublic = val.toString();
+                              isPublic = val!;
                             });
                           },
                         ),
@@ -120,7 +120,7 @@ class _EditCommentState extends State<EditComment> {
                           groupValue: isPublic,
                           onChanged: (val) {
                             setState(() {
-                              isPublic = val.toString();
+                              isPublic = val!;
                             });
                           },
                         ),
